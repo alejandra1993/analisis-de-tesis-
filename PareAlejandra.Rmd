@@ -1,0 +1,812 @@
+---
+title: "Analisis De Tesis"
+author: "Alejandra Escobar"
+date: "17/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(ggplot2)
+library(caret)
+```
+```{r survey, echo=FALSE}
+survey <- read.csv("Tesis_cleaned.csv",sep = ",",header = T)
+
+```
+
+## Introduccion
+
+El presente documento hace referencia a parte del análisis realizado en la investigación de mi tesis de la carrera de ingeniería en sistemas de la UNAH con la temática sobrepoblación estudiantil dentro de la carrera. En este documento podrá encontrar parte del análisis realizado a información recaudada mediante una encuesta de la cual extraemos una cantidad de variables las cuales serán sometidas a varios test para poder concluir sobre esta información en base a algunas de nuestras preguntas de investigación
+
+
+## Resumen de nuestra encuesta
+
+```{r, echo=FALSE}
+for (mynames in names(survey)) {
+  if (mynames!="Horas_.diarias_.estudio") {
+    survey[,mynames] <- as.factor(survey[,mynames])
+    
+  }
+}
+
+summary(survey)
+```
+
+## Limpiesa de datos
+
+### Tratamiento de valores NA
+
+
+```{r , echo=FALSE}
+#setwd("Users/carri/Desktop/Analisis Seminario/")
+
+paper <-read.csv("tesis_paper.csv",header = T,sep = ",",encoding = "UTF-8",na.strings = c(""))
+
+```
+Creamos un nuevo vector para el tratamiento de valores NA
+y recorremos la tabla en busca de estos valores NA que son valores vacios encontrados en la encuesta
+``` {r ,echo=FALSE}
+## vector para valores Na
+na.paper <- c()
+##recorrido de tabla en busca de valores NA
+for (myname in names(paper)){
+  
+  print(myname)
+  
+  en<-as.data.frame(prop.table(table(is.na(paper[,myname]))))
+  
+  operacion <- en %>% filter(Var1==TRUE) %>% select(Freq)
+  
+  length(operacion$Freq)
+  
+  
+  df_temp <- data.frame(
+    
+    column.name=c(myname),
+    na.percentage=ifelse(length(operacion$Freq)==0,0,operacion$Freq[1])
+  )
+  na.paper <- rbind(na.paper,df_temp)
+}
+```
+
+Observan=mos en la siguiente tabla las variables que presentan este tipo de valores NA que son valores vacios en nuestra encuesta.
+
+Los porcentajes mayores a cero, son los que tiene valores NA
+``` {r,echo=FALSE}
+
+na.paper %>% arrange(-na.percentage) %>% filter(na.percentage > 0) 
+
+
+```
+
+
+### Tratamiento de valores NA
+
+
+#### Calidad_conexion
+
+Remplzar los valores NA reemplazar por "NO" debido a que dependia si tenia una conexion permanente a internet o no
+```{r }
+paper[is.na(paper$Calidad_.conexi.n), "Calidad_.conexi.n"] <-"No"
+```
+
+Mostramos los cambios para la variable Calidad_conexion
+``` {r , echo=FALSE}
+table(paper$Calidad_.conexi.n)  
+
+```
+
+
+#### Estimacion_horas_libres
+
+Remplzar los valores NA  por "Ninguna" hora libre debido a que no tiene horas libres 
+```{r }
+
+paper[is.na(paper$Estimaci.n_.horas_.libres),"Estimaci.n_.horas_.libres"] <- "Ninguna"
+```
+Mostramos los cambios para la variable Estimacion_horas_libres
+``` {r , echo=FALSE }
+table(paper$Estimaci.n_.horas_.libres) 
+
+```
+
+
+#### Estimacion_lms
+
+Remplzar los valores NA por "No utilizo lms" debido a que no se contesto la pregunta porque dependia de si usaba un lms o no
+``` {r }
+
+paper[is.na(paper$Estimaci.n_.lms), "Estimaci.n_.lms"] <- "No utilizó LMS"
+```
+
+Mostramos los cambios para la variable Estimacion_lms
+``` {r , echo=FALSE}
+table(paper$Estimaci.n_.lms)   
+```
+
+
+## Analisis Descriptivo
+
+se mostrara un analisis para unas de nuestras variables con el objetivo de ejemplificar el trabajo que se hizo en esta seccion
+
+
+#### Variable Frecuencia de uso
+
+los resultados nos indican que la mayoria de estudiantes utilizan las plataforma campus virtual de la UNAH en ocasiones con un porcentaje de 66% y solo un 26% indica que lo usa muy frecuentemente 
+
+
+
+``` {r , echo=FALSE}
+
+
+as.data.frame(prop.table(table(survey$Frecuencia_.de_.uso))) %>% arrange(-Freq)
+```
+
+mediante la funcion boxplot podemos darnos cuenta de que no tenemos valores atipicos para esta variable
+``` {r, echo=FALSE }
+df_Frecuencia_de_uso <- as.data.frame(prop.table(table(survey$Frecuencia_.de_.uso))) %>% arrange(-Freq)
+boxplot(df_Frecuencia_de_uso$Freq)
+```
+
+tambien lo podemos ver reflejado mediante un histograma para la distribucion de nuestra vairable que es normal.
+``` {r , echo=FALSE}
+hist(df_Frecuencia_de_uso$Freq)
+
+```
+
+mediante la funcion qqnorm reflejamos tambien que tenemos valores normales y no se presentan valores atipicos.
+``` {r , echo=FALSE}
+qqnorm(df_Frecuencia_de_uso$Freq)
+
+```
+
+
+#### Variable Aumento de uso
+
+los resultados nos indican que la mayoria de estudiantes indican que en esta situacion de problematica de pandemia a aumentado el uso de la plataforma capmpus virtual UNAH con un indice de 49% que su aunmento es mucho y un valor de aumento intermedio de 23%, algo interesante es que el 27% indica que el aumento a sido poco quiere decir que hay algunos estudiantes que no conocen los veneficios o no se les exige un uso de este tipo de plataformas
+
+
+``` {r , echo=FALSE}
+
+
+as.data.frame(prop.table(table(survey$Aumento_.de_.uso))) %>% arrange(-Freq)
+```
+
+mediante la funcion boxplot podemos darnos cuenta de que no tenemos valores atipicos para esta variable
+``` {r, echo=FALSE }
+df_Aumento_de_uso <- as.data.frame(prop.table(table(survey$Aumento_.de_.uso))) %>% arrange(-Freq)
+boxplot(df_Aumento_de_uso$Freq)
+```
+
+tambien lo podemos ver reflejado mediante un histograma para la distribucion de nuestra vairable que es normal.
+``` {r , echo=FALSE}
+hist(df_Aumento_de_uso$Freq)
+
+```
+
+mediante la funcion qqnorm reflejamos tambien que tenemos valores normales y no se presentan valores atipicos.
+``` {r , echo=FALSE}
+qqnorm(df_Aumento_de_uso$Freq)
+
+```
+
+
+
+#### Variable Plataforma
+
+los resultados nos indican que la mayoria de estudiantes considera que el uso de este tipo de plataformas son de suma importancia para el estudio hoy endia con un indice del 98% que es lo espera solo algunos estudiantes consideran que no o no llenaron a conciencia la encuesta
+
+
+``` {r , echo=FALSE}
+
+
+as.data.frame(prop.table(table(survey$Plataforma))) %>% arrange(-Freq)
+```
+
+mediante la funcion boxplot podemos darnos cuenta de que no tenemos valores atipicos para esta variable
+``` {r, echo=FALSE }
+df_Plataforma <- as.data.frame(prop.table(table(survey$Plataforma))) %>% arrange(-Freq)
+boxplot(df_Plataforma$Freq)
+```
+
+tambien lo podemos ver reflejado mediante un histograma para la distribucion de nuestra vairable que es normal.
+``` {r , echo=FALSE}
+hist(df_Plataforma$Freq)
+
+```
+
+mediante la funcion qqnorm reflejamos tambien que tenemos valores normales y no se presentan valores atipicos.
+``` {r , echo=FALSE}
+qqnorm(df_Plataforma$Freq)
+
+```
+
+
+
+#### Variable Uso lms
+
+los resultados nos indican que la mayoria de estudiantes si a utilisado lo que son estas plataformas lms ( Learning Management System / Sistema de Gestión de Aprendizaje) con un indice de 0.76% pero hay un grupo que indica que no a utilizado este tipo de plataformas virtuales sin darse cuenta que la plataforma campus virtual UNAH es una plataforma lms eso indica que los estudiantes de la carrera desconocen este concepto.
+
+``` {r , echo=FALSE}
+
+
+as.data.frame(prop.table(table(survey$Uso_.lms))) %>% arrange(-Freq)
+```
+
+mediante la funcion boxplot podemos darnos cuenta de que no tenemos valores atipicos para esta variable
+``` {r, echo=FALSE }
+df_uso_lms <- as.data.frame(prop.table(table(survey$Uso_.lms))) %>% arrange(-Freq)
+boxplot(df_uso_lms$Freq)
+```
+
+tambien lo podemos ver reflejado mediante un histograma para la distribucion de nuestra vairable que es normal.
+``` {r , echo=FALSE}
+hist(df_uso_lms$Freq)
+
+```
+
+mediante la funcion qqnorm reflejamos tambien que tenemos valores normales y no se presentan valores atipicos.
+``` {r , echo=FALSE}
+qqnorm(df_uso_lms$Freq)
+
+```
+
+
+
+## Análisis Correlacional 
+
+Para esta seccion presentamos las siguientes correlaciones entre variables que forman parte de nuetro analisis.
+
+1. Frecuencia_de_uso vs Plataforma
+2. Aumento_de_uso vs Plataforma
+3. Aumento_de_uso vs Uso_lms
+
+
+#### Frecuencia_de_uso vs Plataforma
+
+
+Los resultados reflejan que la mayor cantidad de estudiantes  indican que si consideran importante esl usu de plataformas para el estudio actual y que su uso es en ocaciones esto nos indica que se puede mejorar la cantidad de uso que al final es la idea de nuestra propuesta de solucion.
+```{r }
+table(survey$Frecuencia_.de_.uso,survey$Plataforma)
+
+prop.table(table(survey$Frecuencia_.de_.uso,survey$Plataforma),1)
+
+```
+
+
+Mediante el siguiente grafico podemos apreciar mejor estos resultados, 
+``` {r, echo=FALSE}
+ggplot(survey)+
+  aes(x= Frecuencia_.de_.uso, fill=Plataforma )+
+  geom_bar(position = "stack")+
+  theme(axis.text.x = element_text(angle = 45))
+
+```
+
+
+En nuestro analisi nos interesa saber si estas variables correlacionadas son dependientes o independientes para ello aplicamos un test de chi2 para comprobar su dependencia o independencia.
+
+Como regla se establece lo siguiente:
+
+1. se acepta la hipotesis nula cuando los valores de nuestro p-value tenga valores menores a 0.05
+
+2. H_0: hipotesis nula.
+3. H_A: Hipotesis alternativa.
+
+``` {r }
+chisq.test(table(survey$Frecuencia_.de_.uso,survey$Plataforma))
+
+```
+
+H_O Las categorias Frecuencia de uso y Plataforma son Independientes
+
+H_A Las categorias son Dependientes
+
+Conclusion: segun nuestro p-value con un valor mayor a 0.05 Rechazamos nuestra hipotesis nula por lo tanto nuestras variables son dependientes.
+
+
+
+#### Aumento_de_uso vs Plataforma
+
+
+Los resultados reflejan que la mayor cantidad de estudiantes indican que el aumento de la plataforma campus virtual UNAH a aumentado mucho y que es de gran importancia el uso de este tipo de plataformas. una parte de nuestro interees es que los estudiantes de la carrera la mayoria esta familiarizado con el uso de estas plataformas y nuestra propuesta de solucion implica el uso de una plataforma para aumentar rendimiento del estudiante.
+```{r }
+table(survey$Aumento_.de_.uso,survey$Plataforma)
+
+prop.table(table(survey$Frecuencia_.de_.uso,survey$Plataforma),1)
+
+```
+
+
+Mediante el siguiente grafico podemos apreciar mejor estos resultados, 
+``` {r, echo=FALSE}
+ggplot(survey)+
+  aes(x=Aumento_.de_.uso , fill=Plataforma )+
+  geom_bar(position = "stack")+
+  theme(axis.text.x = element_text(angle = 45))
+
+```
+
+
+En nuestro analisi nos interesa saber si estas variables correlacionadas son dependientes o independientes para ello aplicamos un test de chi2 para comprobar su dependencia o independencia.
+
+
+
+``` {r }
+chisq.test(table(survey$Aumento_.de_.uso,survey$Plataforma))
+
+```
+
+H_O Las categorias Aumento de uso y Plataforma son Independientes
+
+H_A Las categorias son Dependientes
+
+Conclusion: segun nuestro p-value con un valor mayor a 0.05 Rechazamos nuestra hipotesis nula por lo tanto nuestras variables son dependientes.
+
+
+
+#### Aumento_de_uso vs Uso_lms
+
+
+Los resultados reflejan que la mayor cantidad de estudiantes indican que el aumento de uso de la plataforma campus virtual UNAH a aumentado mucho y que si han utilizado este tipo de plataformas lms pero hay un buen grupo por los resultados que nos indica que no conocen el concento de plataforma lms y que en realidad si las han utilizado
+```{r }
+table(survey$Aumento_.de_.uso,survey$Uso_.lms)
+
+prop.table(table(survey$Aumento_.de_.uso,survey$Uso_.lms),1)
+
+```
+
+
+Mediante el siguiente grafico podemos apreciar mejor estos resultados, 
+``` {r, echo=FALSE}
+ggplot(survey)+
+  aes(x=Aumento_.de_.uso , fill=Uso_.lms )+
+  geom_bar(position = "stack")+
+  theme(axis.text.x = element_text(angle = 45))
+
+```
+
+
+En nuestro analisi nos interesa saber si estas variables correlacionadas son dependientes o independientes para ello aplicamos un test de chi2 para comprobar su dependencia o independencia.
+
+
+
+``` {r }
+chisq.test(table(survey$Aumento_.de_.uso,survey$Uso_.lms))
+
+```
+
+H_O Las categorias Aumento de uso y Plataforma son Independientes
+
+H_A Las categorias son Dependientes
+
+Conclusion: segun nuestro p-value con un valor de 0.04301 menor a 0.05 aceptamos nuestra hipotesis nula por lo tanto nuestras variables son independientes.
+
+
+
+
+## Correlaciones de variables numerica vs categorica.
+
+En nuestro caso solo tenemos una variable de tipo numérica o continua por eso solo aremos es análisis de correlación entre una variable de tipo numérica y una variable de tipo categórica para ver si estas tienen un tipo de relación o si no se relacionan.
+
+Las variables que se eligieron son: numérica= Horas_diarias_estudio, categórica= Reprobación. La hipótesis que queremos comprobar es si los estudiantes que han tenido reprobación en sus clases pues le dedican menos horas de estudio al día y si los que no han tenido una reprobación le dedican más horas de estudio al día. 
+
+
+Realizando un pequeño análisis de las variables obtuvimos los siguientes resultados.
+``` {r }
+
+str(survey$Reprobaci.n)
+
+
+
+table(survey$Reprobaci.n)
+
+
+summary(survey$Horas_.diarias_.estudio)
+
+
+```
+
+Mediante la función summary de nuestra variable de tipo numérica obtenemos datos de valor mínimo = 1, la media que se encuentra en media = 2, valor máximo que dice que estudia 8 horas diarias que no tendría mucho sentido o no es un valor común. También mediante la función table de nuestra variable de tipo categórica podemos observar que la mayoría de resultados de la muestra indican que los estudiantes si han reprobado en este caso 100 de los 130 encuestados.
+
+
+
+Utilizando la función qqnorm podemos darnos cuenta que tenemos algunos valores que podrían generar problemas debido a que aportarían bastante error en nuestro análisis, ya que nuestra media se encuentra en un valor de dos como lo denotamos anterior mente y es el  are entre 1 y 4 donde se encuentra el mayor número de encuestados y para el área de 5 y 8 pues estos datos están más alejados y generan pues más error o le agregan más error a nuestro análisis para ver de mejor forma utilizamos nuestro qqline que arrojo los siguientes resultados.
+
+``` {r }
+qqnorm(survey$Horas_.diarias_.estudio)
+
+```
+
+
+La funcion qqline nos mestra de mejor forma que tenemos algunos que podrian generar error o son atipicos
+
+
+``` {r }
+
+qqnorm(survey$Horas_.diarias_.estudio)
+qqline(survey$Horas_.diarias_.estudio)
+
+```
+
+
+Los resultados de qqline pues corroboran lo indicado anterior mente que los resultados que están entre 5 y 8 pues se alejan de la línea aportando bastante error y una forma más clara de poder ver esto es mediante un boxplot que nos indicara si tenemos o no valores atípicos.
+
+
+``` {r }
+boxplot(survey$Horas_.diarias_.estudio)
+
+```
+
+
+Los resultados del boxplot pues indican que tenemos varios valores atípicos y son los resultados que están por encima de valores de 4 horas diarias de estudio estos valores atípicos si hacemos un análisis pues nos aportan error. Para esta variable corrimos la prueba de shapiro.test para ver si nuestra variable tiene una distribución normal obteniendo los siguientes resultados.
+
+
+
+``` {r }
+
+shapiro.test(survey$Horas_.diarias_.estudio)
+
+```
+
+H_O nuestra variable Horas_diarias_estudio es normal.
+
+H_A nuestra variable es anormal 
+
+Regla si nuestro p-value que arroje nuestra prueba de shapiro es mayor a 0.05 no rechazamos nuestra hipótesis nula.
+
+El p-value de nuestra prueba de shapiro es de 1.696e-08 = 0.0005689446169 que es un valor muy inferior a 0.05 
+
+Conclusión: como p-value es menor a 0.05 rechazamos nuestra hipótesis nula.
+
+
+Esto nos indica que nuestra variable Horas_diarias_estudio de tipo numérica es una variable que no tiene una distribución normal por lo tanto no podríamos seguir haciendo nuestro tratamiento ya que las siguientes pruebas son de tipo paramétrico y estas requieren que nuestra variable tenga una distribución normal.
+
+#### Para fines de estudio
+Para fines de nuestro estudio queremos saber si podemos lograr hacer mediante transformaciones que nuestra variable sea normal o que tenga una distribución normal, para la cual hicimos la siguiente transformación asignándole a aquellos valores que son atípicos en valor de nuestra media los valores que están por encima de 4 en este caso 5,6,7,8 se sustituyen por el valor de la media.
+
+
+``` {r }
+
+survey[survey$Horas_.diarias_.estudio > 4 , "Horas_.diarias_.estudio"] <- median(survey$Horas_.diarias_.estudio)
+
+
+```
+
+
+Después de hacer esta transformación hacemos nuevamente el análisis de nuestra variable Horas_diarias_estudio para ver si logramos la normalidad obteniendo los siguientes resultados.
+
+
+``` {r }
+qqnorm(survey$Horas_.diarias_.estudio)
+
+```
+
+Como observamos en nuestro qqnorm pues ahora parecería que nuestra regresión no tendría tanto error como se mostraba al principio esto lo refleja mejor nuestro qqline que muestra los siguientes resultados.
+
+
+``` {r }
+qqnorm(survey$Horas_.diarias_.estudio)
+qqline(survey$Horas_.diarias_.estudio)
+
+```
+
+
+Como podemos notar nuestro qqline refleja que ya no tenemos eso valores que estaban alejados de la línea aparentemente no tendríamos tanto error. Pero para ver de forma más clara si aún tenemos valores atípicos pues corremos nuestro boxplot.
+
+
+
+``` {r }
+boxplot(survey$Horas_.diarias_.estudio)
+
+```
+
+
+Como refleja nuestro boxplot ya no tenemos esos valores atípicos que podíamos apreciar al principio también nos indica que la mayoría de encuestados se encuentra en nuestro segundo cuartil que se posiciona en 2 horas diarias de estudio, pero para corroborar si nuestra variable ahora si tiene una distribución normal volvemos a realizar nuestra prueba de shapiro obteniendo los siguientes resultados.
+
+
+``` {r }
+
+shapiro.test(survey$Horas_.diarias_.estudio)
+
+```
+
+
+H_O  nuestra variable Horas_diarias_estudio es normal.
+
+H_A nuestra variable no es anormal. 
+
+Conclusión nuestro p-value tiene un valor de 8.527e-10 = 0.0003871252011 que es menor a 0.05 por lo tanto rechazamos nuestra hipótesis nula.
+
+
+
+Como vemos nuestra prueba de shapiro volvió a indicar que nuestra variable es anormal por lo que no podemos seguir realizando las pruebas de tipo paramétrico porque no tenemos una distribución normal en nuestra variable Horas_diarias_estudio.
+
+
+Ya que no podemos hacer las conclusiones que planteamos al principio de saber si los estudiantes que si han tenido reprobación de clases tienen un número menor de horas de estudio contra los que no han reprobado clases.
+
+
+Consideramos lo siguiente no eliminar estas variables debido a que tiene información que es importante como por ejemplo la variable Reprobación que es de tipo categórica ya que sus resultados muestran que la mayoría de alumnos si ha reprobado clases esto indica que debe de haber otros factores que influyen a que se de esto. Además, nuestra variable Horas_diarias_estudio de tipo numérica que nos indica que la media de horas diarias de estudio es de 2 que serviría para saber cuánto tiempo podrían invertir en el uso de plataformas como LMS que es parte de nuestra propuesta de solución.
+
+
+En cuanto a correlación de variables numéricas no se logró hacer el análisis debido a que en nuestra encuesta solo posee una variable de tipo numérica que en este caso es Horas_diaras_estudio para ello hicimos un str de nuestro survey que demuestra la existencia de solo una variable numérica.
+
+``` {r }
+
+str(survey)
+
+```
+
+
+## Analisis Explicativo
+
+### Definicion de variable de respuesta
+
+La variable de respuesta que identificamos es Uso_LMS la cual utilizaremos para hacer una regresión logística con el objetivo de identificar aquel grupo de estudiantes que hicieron mención a que no han usado este tipo de plataformas lo cual nos indicaría que nuestra propuesta de usar un LMS para influir en el rendimiento del estudiante, correría riesgo de no funcionar ya que este grupo indica que no ha usado esta tecnología o desconoce el concepto.
+
+
+### Aplicacion de regresion logistica
+
+
+Como mencionamos anteriormente es de sumo interés identificar el grupo de estudiantes que indican que no han usado una plataforma LMS cuyo porcentaje es 23.84% para lo cual aplicaremos una regresión logística de la variable de respuesta junto con un conjunto de variables que consideramos tienen relación o que influyen con ella.
+
+``` {r , echo=FALSE}
+survey <- read.csv("Tesis_cleaned.csv",sep = ",",header = T)
+
+table(survey$Uso_.lms)
+prop.table(table(survey$Uso_.lms)) 
+
+```
+
+El conjunto de variables que elegimos es el siguiente:
+
+1.	Computadora_.permanente
+2.  Conexión_.permanente
+3.	Rango_.promedio_.clases
+4.	Horas_.diarias_.estudio
+5.	Disciplina
+6.	Autodidacta
+7.	Plataforma
+8.	Frecuencia_.de_.uso 
+9.	Recursos.
+
+Los resultados que obtuvimos en la regresión logística son los siguientes
+
+
+```{r, echo=FALSE}
+#CARGAR LAS VARIABLES DE ACOMPANAMIENTO JUNTO CON LA VARIABLE DE PESO PARA REGRESION LOGISTICA
+features <- c(
+  "Computadora_.permanente",
+  "Conexión_.permanente",
+  "Rango_.promedio_.clases",
+  "Horas_.diarias_.estudio",
+  "Disciplina",
+  "Autodidacta",
+  "Plataforma",
+  "Frecuencia_.de_.uso", 
+  "Recursos",
+  "Uso_.lms"
+)
+
+
+#CREAMOS UN NUEVO VECTOR SET PARA CARGAR LAS VARIABLES QUE SOLO VAMOS USAR
+set <- survey[, names(survey) %in% features ]
+
+set$Uso_.lms <- as.factor(set$Uso_.lms)
+
+#APLICAMOS LA REGRESION LOGISTICA Y CARGAMOS EL RESULTADO EN VECTOR MODEL
+model <- glm(Uso_.lms ~ ., data = set, family = "binomial") 
+
+#IMPRIMIMOS EL VECTOR MODEL PARA VER LOS RESULTADOS 
+model
+
+```
+
+
+La regresión logística nos muestra los coeficientes de cada variable que nos pueden ayudar a predecir el comportamiento de un nuevo registro.
+
+
+Utilizando la función varImp() nos permite ordenar las variables en su grado de importancia el resultado se aprecia en la siguiente imagen.
+
+
+``` {r, echo=FALSE }
+
+#CREAMOS U NUEVO VECTOR IMPIRTANCIA Y CORREMOS LA FUNCION VARIMP QUE NOS MUESTRA
+#EL COEFICIENTE DE IMPORTANCIA POR NOMBRE DE VARIABLE
+Importancia <- varImp(model)
+#IMPRIMIMOS EL VECTOR IMPORTANCIA PARA VER LOS RESULTADOS 
+Importancia
+
+```
+
+
+Según el resultado de esta función ordena las variables de acuerdo al grado de importancia y nos indica que una de las variables que tiene mayor importancia es Computadora_permanente. 
+
+
+Posteriormente cuando hacemos el arrange de nuestro coeficiente overall nos ordena las variables más importantes que influyen en este proceso. Los resultados de nuestro arrange los podemos apreciar acontinuacion.
+
+``` {r, echo=FALSE}
+
+
+#HACEMOS UNA PeQUENA TRANSFORMACION PARA AGREGAR EL NOMBRE DE IMPORTANCIA A LA COLUMNA
+Importancia$col <- row.names(Importancia)
+
+
+#APLICAMOS UN ARRANGE AL COEFICIENTE DE IMPORTACIA DE VARIABLE OVERALL
+Importancia <- Importancia %>% arrange(-Overall)  
+
+#IMPRIMIMOS EL VECTOR IMPORTANCIA PARA VER EL ORDEN DE LAS VARIABLES SEGUN SU IMPORTANCIA
+Importancia
+
+```
+
+
+Una vez que ya tenemos nuestras variables ordenadas según la importancia que tienen respecto a nuestra variable de peso pues evaluaremos algunas de ellas para ver si hace sentido la interpretación con respecto a la gráfica, correlación entre la variable Disciplina y Uso_lms se presenta la siguiente gráfica.
+
+``` {r, echo=FALSE}
+
+#GENERAMOS UN GRAFICO PARA INTERPRETAR DE MEJOR FORMA LOS RESULTADOS DE CORRELACION
+#DE CADA UNA DE LAS VARIABLES SEGUN EL ORDEN DE IMPORTANCIA CON LA VARIABLE DE PESO
+ggplot(survey)+
+  aes(x= Recursos, fill= Uso_.lms)+
+  geom_bar(position = "fill")+
+  theme(axis.text.x = element_text(angle = 45))+
+  scale_fill_manual(values = c("#CF5C43","#999999"))
+
+```
+
+
+Como lo indica el grafico aquellos estudiantes que mencionaron que no son disciplinados pues son los que tienen más riesgo que a la hora de implementarles una plataforma de LMS pues no incida en su rendimiento ya que no tienen una buena práctica de cumplir con sus deberes como estudiante.
+
+#### 	Correlación de variable Computadora_permanente vs Uso_lms
+
+```  {r, echo=FALSE}
+
+#GENERAMOS UN GRAFICO PARA INTERPRETAR DE MEJOR FORMA LOS RESULTADOS DE CORRELACION
+#DE CADA UNA DE LAS VARIABLES SEGUN EL ORDEN DE IMPORTANCIA CON LA VARIABLE DE PESO
+ggplot(survey)+
+  aes(x= Computadora_.permanente, fill= Uso_.lms)+
+  geom_bar(position = "fill")+
+  theme(axis.text.x = element_text(angle = 45))+
+  scale_fill_manual(values = c("#CF5C43","#999999"))
+
+```
+
+
+La grafica nos indica que tenemos que poner más atención a aquellos estudiantes que indican que no tiene computadora permanente ya ellos no tendrían las herramientas necesarias para el uso de una plataforma LMS que influya en su rendimiento.
+
+
+
+### Correlación Recursos vs Uso_lms
+
+``` {r, echo=FALSE}
+
+#GENERAMOS UN GRAFICO PARA INTERPRETAR DE MEJOR FORMA LOS RESULTADOS DE CORRELACION
+#DE CADA UNA DE LAS VARIABLES SEGUN EL ORDEN DE IMPORTANCIA CON LA VARIABLE DE PESO
+ggplot(survey)+
+  aes(x= Recursos, fill= Uso_.lms)+
+  geom_bar(position = "fill")+
+  theme(axis.text.x = element_text(angle = 45))+
+  scale_fill_manual(values = c("#CF5C43","#999999"))
+
+```
+
+La grafica nos indica que aquellos que consideran que un aumento de los recursos tanto de infraestructura como de personal no ayudaría a mejorar el rendimiento académico son los que tienen más riesgo de no poder mejorar su rendimiento mediante el uso de una plataforma LMS. 
+
+
+### Correlación Rango_promedio_clases vs Uso_lms
+
+``` {r, echo=FALSE}
+#GENERAMOS UN GRAFICO PARA INTERPRETAR DE MEJOR FORMA LOS RESULTADOS DE CORRELACION
+#DE CADA UNA DE LAS VARIABLES SEGUN EL ORDEN DE IMPORTANCIA CON LA VARIABLE DE PESO
+ggplot(survey)+
+  aes(x= Rango_.promedio_.clases, fill= Uso_.lms)+
+  geom_bar(position = "stack")+
+  theme(axis.text.x = element_text(angle = 45))+
+  scale_fill_manual(values = c("#CF5C43","#999999"))
+
+```
+
+
+Como se puede apreciar en la gráfica a medida que van aumentando el número de clases matriculadas por periodo pues aumenta el riesgo de que se logre mejorar el rendimiento del estudiante por medio de una plataforma LMS debido a que estaría sobre cargado. 
+
+
+## Solucion tecnologica
+
+### Comunicación de servicios de la solución tecnológica
+
+En esta sección explicamos la relación entre nuestros servicios de la arquitectura de nuestra propuesta de solución tecnológica.
+
+``` {r , echo=FALSE, fig.cap="", out.width = '100%'}
+
+knitr::include_graphics("webApi.png")
+
+```
+
+
+El objetivo que pretendemos alcanzar en la comunicación de estos 2 servicios como es el de base de datos UNAH y webAPI es consultar información específica del maestro como ser su asistencia con el objetivo global de presentarle posteriormente recomendaciones en base a información.
+
+``` {r , echo=FALSE, fig.cap="", out.width = '100%'}
+
+knitr::include_graphics("moodle.png")
+
+```
+
+
+De igual forma para los servicios presentados como ser el de Moodle y nuestra WebAPI recordando que nuestra propuesta de solución tecnológica es Implementar el uso de LMS para aumentar el rendimiento del alumno y generar recomendaciones de mejores prácticas a los maestros el objetivo para estos dos componentes obtener información del LMS como ser control de seguimiento do los estudiantes además todos aquellos comentarios, observaciones  de ellos mediante nuestro aplicativo para posteriormente toda esta data procesarla y generar las recomendaciones para el maestro.
+
+
+``` {r , echo=FALSE , fig.cap="", out.width = '100%'}
+
+knitr::include_graphics("moodleETL.png")
+
+```
+
+
+El objetivo de relacionar estos tres servicios es que al haber consultado toda esa información pues someter esos datos mediante un proceso ETL para transformación de solo los datos que queremos para un posterior almacenamiento en una base de datos de tipo no relacional.
+
+
+``` {r , echo=FALSE, fig.cap="", out.width = '100%'}
+
+knitr::include_graphics("baseRelacional.png")
+
+```
+
+
+Como mencionamos una vez obtenidos los datos y procesados mediante ETL el objetivo es almacenarlos en una base de datos no relacional y el componente de base de datos relacional lo dejamos para controlar accesos y ciertas configuraciones de nuestra WebAPI y nuestra api de recomendaciones.
+
+
+``` {r , echo=FALSE, fig.cap="", out.width = '100%'}
+
+knitr::include_graphics("Hadoo.png")
+
+```
+
+
+El objetivo de relación de estos servicios es que toda aquella información datos almacenarlos en un cluster de servidores con configuración Hadoop, además de eso pretendemos que nuestros servidores sean de tipo storage permitan almacenar y consultar una gran cantidad de datos y almacenar rutinas modelos entrenados que nos permitirá mediante minería de datos estudiantil y análisis predictivos generar las recomendaciones y consultarlas mediante las bases de datos de nuestros aplicativos.
+
+
+
+``` {r , echo=FALSE, fig.cap="", out.width = '100%'}
+
+knitr::include_graphics("Api recomendaciones.png")
+
+```
+
+
+El objetivo de relación de estos servicios es que una vez ya tengamos generadas todas aquellas recomendaciones consultarlas mediante nuestro aplicativo de recomendaciones de mejores prácticas para ser presentados al usuario en este caso los maestros.
+
+
+
+``` {r , echo=FALSE, fig.cap="", out.width = '100%'}
+
+knitr::include_graphics("Usuario.png")
+
+```
+
+
+Por ultimo tenemos la relación entre estos servicios cuyo objetivo es que nuestro aplicativo le presente las recomendaciones de mejores prácticas al usuario maestro de cómo mejorar la dinámica de la clase que le sirva como un tipo de retroalimentación que le permitirá al docente como ejemplo cambiar la forma de como presentar mejor los contenidos sugerir nuevos o implementar prácticas que mejoren las condiciones de la clase para un mejor aprovechamiento del estudiante.
+
+
+Por ultimo presentamos de forma completa la arquitectura de nuestra solución tecnológica.
+
+### Arquitectura de solucion tecnologica
+
+``` {r , echo=FALSE, fig.cap="", out.width = '100%'}
+
+knitr::include_graphics("Solucion Tecnologica.png")
+
+```
+
+
+
+
+
+
+
+
+
+
